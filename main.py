@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
-from dev_parcial2.utils.connection_db import init_db, get_session
-from dev_parcial2.data.models import User, Task, UserState, TaskState
-from dev_parcial2.operations import operations_db
+from utils.connection_db import init_db, get_session
+from data.models import User, Task, UserState, TaskState
+from operations import operations_db
 
 app = FastAPI()
 
@@ -10,7 +10,7 @@ app = FastAPI()
 async def startup():
     await init_db()
 
-# --------- USUARIOS ---------
+# Usuarios
 @app.post("/users/", response_model=User)
 async def add_user(user: User, session: AsyncSession = Depends(get_session)):
     return await operations_db.create_user(session, user)
@@ -44,7 +44,7 @@ async def mark_premium(user_id: int, session: AsyncSession = Depends(get_session
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-# --------- TAREAS ---------
+# Tareas
 @app.post("/tasks/", response_model=Task)
 async def add_task(task: Task, session: AsyncSession = Depends(get_session)):
     return await operations_db.create_task(session, task)

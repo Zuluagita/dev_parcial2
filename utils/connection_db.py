@@ -7,9 +7,11 @@ from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
 
+MYSQL_PORT = os.getenv('MYSQL_PORT', '3306')
+
 DATABASE_URL = (
     f"mysql+aiomysql://{os.getenv('MYSQL_USER')}:{os.getenv('MYSQL_PASSWORD')}"
-    f"@{os.getenv('MYSQL_HOST')}:{os.getenv('MYSQL_PORT')}/{os.getenv('MYSQL_DATABASE')}"
+    f"@{os.getenv('MYSQL_HOST')}:{MYSQL_PORT}/{os.getenv('MYSQL_DATABASE')}"
 )
 
 engine: AsyncEngine = create_async_engine(DATABASE_URL, echo=True)
