@@ -1,110 +1,63 @@
-import csv
-import os
-from dev_parcial2.data.models import UserCreate, UserOut
+from sqlmodel import select
+from dev_parcial2.data.models import User, Task, UserState, TaskState
 
-CSV_FILE = "users.csv"
-FIELDNAMES = ["id", "name", "is_active", "is_premium"]
+# --------- USUARIOS ---------
+async def create_user(session, user_data):
+    user = User(**user_data.dict())
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
 
+async def get_user_by_id(session, user_id: int):
+    return await session.get(User, user_id)
 
-def init_db():
-    if not os.path.exists(CSV_FILE):
-        with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=FIELDNAMES)
-            writer.writeheader()
+async def update_user_status(session, user_id: int, new_state: UserState):
+    user = await get_user_by_id(session, user_id)
+    if user:
+        user.state = new_state
+        await session.commit()
+        await session.refresh(user)
+    return user
 
+async def mark_user_premium(session, user_id: int):
+    user = await get_user_by_id(session, user_id)
+    if user:
+        user.premium = True
+        await session.commit()
+        await session.refresh(user)
+    return user
 
-def read_all_users():
-    with open(CSV_FILE, mode="r", newline="", encoding="utf-8") as file:
-        reader = csv.DictReader(file)
-        return list(reader)
+async def list_active_users(session):
+    result = await session.execute(select(User).where(User.state == UserState.activo))
+    return result.scalars().all()
 
-
-def write_all_users(users):
-    with open(CSV_FILE, mode="w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=FIELDNAMES)
-        writer.writeheader()
-        writer.writerows(users)
-
-
-def get_new_id(users):
-    if users:
-        last_id = max(int(user["id"]) for user in users)
-    else:
-        last_id = 0
-    return last_id + 1
-
-
-def create_user(data: UserCreate) -> UserOut:
-    users = read_all_users()
-    new_id = get_new_id(users)
-    new_user = {
-        "id": str(new_id),
-        "name": data.name,
-        "is_active": "True",
-        "is_premium": str(data.is_premium if data.is_premium else False)
-    }
-    users.append(new_user)
-    write_all_users(users)
-    return convert_to_response(new_user)
-
-
-def get_user_by_id(user_id: int) -> UserOut | None:
-    users = read_all_users()
-    for user in users:
-        if int(user["id"]) == user_id:
-            return convert_to_response(user)
-    return None
-
-
-def update_user_field(user_id: int, field: str, value: str) -> UserOut | None:
-    users = read_all_users()
-    updated = None
-    for user in users:
-        if int(user["id"]) == user_id:
-            user[field] = value
-            updated = user
-            break
-    if updated:
-        write_all_users(users)
-        return convert_to_response(updated)
-    return None
-
-
-def delete_user(user_id: int) -> UserOut | None:
-    users = read_all_users()
-    deleted = None
-    for user in users:
-        if int(user["id"]) == user_id:
-            user["is_active"] = "False"
-            user["is_premium"] = "False"
-            deleted = user
-            break
-    if deleted:
-        write_all_users(users)
-        return convert_to_response(deleted)
-    return None
-
-
-def filter_users(is_active=None, is_premium=None):
-    users = read_all_users()
-    filtered = []
-    for user in users:
-        # Convertimos los valores a booleanos de forma segura
-        user_is_active = user.get("is_active", "").lower() == "true"
-        user_is_premium = user.get("is_premium", "").lower() == "true"
-
-        if is_active is not None and user_is_active != is_active:
-            continue
-        if is_premium is not None and user_is_premium != is_premium:
-            continue
-        filtered.append(convert_to_response(user))
-    return filtered
-
-
-def convert_to_response(user):
-    return UserOut(
-        id=int(user["id"]),
-        name=user["name"],
-        is_active=(user["is_active"].lower() == "true"),
-        is_premium=(user["is_premium"].lower() == "true")
+async def list_active_premium_users(session):
+    result = await session.execute(
+        select(User).where(User.state == UserState.activo, User.premium == True)
     )
+    return result.scalars().all()
+
+# --------- TAREAS ---------
+async def create_task(session, task_data):
+    task = Task(**task_data.dict())
+    session.add(task)
+    await session.commit()
+    await session.refresh(task)
+    return task
+
+async def list_all_tasks(session):
+    result = await session.execute(select(Task))
+    return result.scalars().all()
+
+async def list_tasks_by_user(session, user_id: int):
+    result = await session.execute(select(Task).where(Task.user_id == user_id))
+    return result.scalars().all()
+
+async def update_task_state(session, task_id: int, new_state: TaskState):
+    task = await session.get(Task, task_id)
+    if task:
+        task.state = new_state
+        await session.commit()
+        await session.refresh(task)
+    return task
