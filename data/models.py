@@ -1,11 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum
-from sqlalchemy.ext.declarative import declarative_base
-import enum
+from sqlmodel import SQLModel, Field
+from typing import Optional
 from datetime import datetime
+import enum
 
-Base = declarative_base()
-
-# Estados personalizados
 class UserState(str, enum.Enum):
     activo = "Activo"
     inactivo = "Inactivo"
@@ -17,24 +14,18 @@ class TaskState(str, enum.Enum):
     realizada = "Realizada"
     cancelada = "Cancelada"
 
-# Modelo Usuario
-class User(Base):
-    __tablename__ = "users"
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    email: str
+    state: UserState = Field(default=UserState.activo)
+    premium: bool = Field(default=False)
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    state = Column(Enum(UserState), default=UserState.activo)
-    premium = Column(Boolean, default=False)
-
-# Modelo Tarea
-class Task(Base):
-    __tablename__ = "tasks"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    state = Column(Enum(TaskState), default=TaskState.pendiente)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+class Task(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    description: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    state: TaskState = Field(default=TaskState.pendiente)
+    user_id: int = Field(foreign_key="user.id")
