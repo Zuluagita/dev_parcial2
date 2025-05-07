@@ -44,6 +44,13 @@ async def mark_premium(user_id: int, session: AsyncSession = Depends(get_session
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+@app.patch("/users/{user_id}/unpremium", response_model=User)
+async def unmark_premium(user_id: int, session: AsyncSession = Depends(get_session)):
+    user = await operations_db.unmark_user_premium(session, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 # Tareas
 @app.post("/tasks/", response_model=Task)
 async def add_task(task: Task, session: AsyncSession = Depends(get_session)):

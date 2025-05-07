@@ -1,7 +1,7 @@
 from sqlmodel import select
 from data.models import User, Task, UserState, TaskState
 
-# --------- USUARIOS ---------
+# Usuarios
 async def create_user(session, user_data):
     user = User(**user_data.dict())
     session.add(user)
@@ -16,6 +16,8 @@ async def update_user_status(session, user_id: int, new_state: UserState):
     user = await get_user_by_id(session, user_id)
     if user:
         user.state = new_state
+        if new_state == UserState.eliminado:
+            user.premium = False  # al eliminar, pierde premium automáticamente
         await session.commit()
         await session.refresh(user)
     return user
@@ -24,6 +26,14 @@ async def mark_user_premium(session, user_id: int):
     user = await get_user_by_id(session, user_id)
     if user:
         user.premium = True
+        await session.commit()
+        await session.refresh(user)
+    return user
+
+async def unmark_user_premium(session, user_id: int):
+    user = await get_user_by_id(session, user_id)
+    if user:
+        user.premium = False
         await session.commit()
         await session.refresh(user)
     return user
@@ -38,7 +48,7 @@ async def list_active_premium_users(session):
     )
     return result.scalars().all()
 
-# --------- TAREAS ---------
+# Tareas
 async def create_task(session, task_data):
     task = Task(**task_data.dict())
     session.add(task)
