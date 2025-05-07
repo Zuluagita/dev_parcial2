@@ -1,5 +1,5 @@
 from sqlmodel import select
-from ..data.models import User, Task, UserState, TaskState
+from data.models import User, Task, UserState, TaskState
 
 # --------- USUARIOS ---------
 async def create_user(session, user_data):
